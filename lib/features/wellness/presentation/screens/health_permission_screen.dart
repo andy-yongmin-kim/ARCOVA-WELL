@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -10,14 +11,14 @@ class _DataType {
   const _DataType(this.icon, this.title, this.subtitle);
 }
 
-const _dataTypes = <_DataType>[
+const _androidDataTypes = <_DataType>[
   _DataType(Icons.bedtime_outlined, 'Sleep Duration', 'Circadian & recovery cycles'),
   _DataType(Icons.directions_walk_outlined, 'Steps Count', 'Physical activity baseline'),
   _DataType(Icons.local_fire_department_outlined, 'Active Minutes', 'Elevated heart-rate activity'),
   _DataType(Icons.favorite_outline, 'Resting Heart Rate', 'Autonomic & heart health'),
 ];
 
-/// Final onboarding step: connect Health Connect or use sample data.
+/// Final onboarding step: connect Health Connect (Android) or explain mood+AI focus (iOS).
 class HealthPermissionScreen extends ConsumerStatefulWidget {
   const HealthPermissionScreen({super.key});
 
@@ -36,12 +37,15 @@ class _HealthPermissionScreenState extends ConsumerState<HealthPermissionScreen>
 
     ref.read(onboardingProvider.notifier)
         .setHealthConnected(!useSample && granted);
-    // Flipping this swaps the whole onboarding flow out for the main app.
     ref.read(onboardingProvider.notifier).completeOnboarding();
   }
 
   @override
   Widget build(BuildContext context) {
+    return Platform.isAndroid ? _buildAndroid(context) : _buildIOS(context);
+  }
+
+  Widget _buildAndroid(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(),
@@ -60,10 +64,10 @@ class _HealthPermissionScreenState extends ConsumerState<HealthPermissionScreen>
               const SizedBox(height: 20),
               Expanded(
                 child: ListView.separated(
-                  itemCount: _dataTypes.length,
+                  itemCount: _androidDataTypes.length,
                   separatorBuilder: (context, index) => const SizedBox(height: 12),
                   itemBuilder: (context, i) {
-                    final d = _dataTypes[i];
+                    final d = _androidDataTypes[i];
                     return Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -109,6 +113,73 @@ class _HealthPermissionScreenState extends ConsumerState<HealthPermissionScreen>
                   child: const Text('Use Sample Data'),
                 ),
               ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIOS(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      appBar: AppBar(),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('You\'re all set', style: theme.textTheme.headlineMedium),
+              const SizedBox(height: 8),
+              Text(
+                'Arcova will track your daily mood check-ins and generate personalized AI briefings. '
+                'Device health metrics (sleep, steps, heart rate) are available on Android via Health Connect.',
+                style: theme.textTheme.bodyMedium?.copyWith(color: AppTheme.textSecondary),
+              ),
+              const SizedBox(height: 24),
+              for (final item in const [
+                (Icons.mood, 'Daily Mood Check-In', 'Log how you feel each day'),
+                (Icons.article_outlined, 'AI Daily Briefing', 'Personalized insight every morning'),
+                (Icons.cloud_outlined, 'Cloud Backup', 'Optional — sign in + premium required'),
+              ])
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: theme.cardColor,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: AppTheme.cardShadow,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(item.$1, color: AppTheme.primaryColor),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(item.$2, style: theme.textTheme.titleMedium),
+                              Text(item.$3, style: theme.textTheme.bodySmall),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              const Spacer(),
+              if (_busy)
+                const Center(child: CircularProgressIndicator())
+              else
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => _proceed(useSample: true),
+                    child: const Text('Get Started'),
+                  ),
+                ),
             ],
           ),
         ),

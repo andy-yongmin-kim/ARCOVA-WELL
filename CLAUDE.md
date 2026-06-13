@@ -95,17 +95,20 @@ Product ID: `arcova_premium_unlock` (`payment_service.dart`). Gates cloud sync.
 
 ## Critical pre-release flag
 
-`settings_screen.dart` top: `const bool kTestMode = true;` — **must be set to `false`** before
-any production release. It unlocks premium without real payment.
+`settings_screen.dart` top: `const bool kTestMode = false;` — set correctly. Do not change back.
 
 ## External setup required before a real build/run
 
-1. Register `com.arcova.well` as an Android app in the Firebase console and replace
-   `android/app/google-services.json` (the committed file still targets the old package, so a
-   native build fails fast at `:app:processDebugGoogleServices` until replaced).
-2. Enable Firebase **AI Logic** (Gemini) on the **Blaze** plan for live briefings.
-3. Replace `assets/icon/app_icon.png` + splash with Arcova artwork, then regenerate icons/splash.
-4. Provide a privacy-policy URL (required for Health Connect + Play submission).
+1. **Android** — `android/app/google-services.json` is already registered for `com.arcova.well`.
+2. **iOS Firebase** — `ios/Runner/GoogleService-Info.plist` is **stale** (still targets
+   `com.oneplace.onePlace` and has no `CLIENT_ID`/`REVERSED_CLIENT_ID`). Must be replaced:
+   - Register `com.arcova.well` as an iOS app in the Firebase console.
+   - Download the new `GoogleService-Info.plist` and replace the committed file.
+   - Add the `REVERSED_CLIENT_ID` value from that file as a URL scheme in `ios/Runner/Info.plist`
+     under `CFBundleURLSchemes` (required for Google Sign-In redirect on iOS).
+   - Until this is done, Firebase Auth and Google Sign-In **will not function on iOS**.
+3. Enable Firebase **AI Logic** (Gemini) on the **Blaze** plan for live briefings.
+4. Replace `assets/icon/app_icon.png` + splash with Arcova artwork, then regenerate icons/splash.
 5. Native build/run requires a **real Android device** (Health Connect isn't on most emulators).
 
 ## Android JVM targets

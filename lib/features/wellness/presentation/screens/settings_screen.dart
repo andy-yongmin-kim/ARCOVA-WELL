@@ -1,16 +1,23 @@
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/auth_service.dart';
 import '../../../../core/services/payment_service.dart';
 import '../../../../core/services/premium_service.dart';
 import '../../../../core/services/sync_service.dart';
 import '../../providers/wellness_providers.dart';
+import 'data_disclosure_screen.dart';
 import 'medical_disclaimer_screen.dart';
 
-/// ⚠️ Pre-release flag — bypasses real payment so premium can be toggled
-/// during development. MUST be set to `false` before any production release.
-const bool kTestMode = true;
+// IMPORTANT: must be false before any production release.
+const bool kTestMode = false;
+
+const String _kPrivacyPolicyUrl =
+    'https://app.notion.com/p/Privacy-Policy-One-Place-332e1199e4dd80afa91af46bb8e3c3f3?source=copy_link';
+const String _kTermsUrl =
+    'https://app.notion.com/p/Terms-of-Service-One-Place-332e1199e4dd805ba8e6e398af15ab96?source=copy_link';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -129,12 +136,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _wipe() async {
+    final userAsync = ref.read(currentUserProvider);
+    final isLoggedIn = userAsync.maybeWhen(data: (u) => u != null, orElse: () => false);
+    final isPremium = ref.read(premiumStatusProvider);
+    final hasCloud = isLoggedIn && isPremium;
+
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Wipe local data?'),
-        content: const Text(
-            'This permanently deletes your locally stored health, mood, and briefing history on this device. This cannot be undone.'),
+        title: const Text('Wipe all data?'),
+        content: Text(
+          hasCloud
+              ? 'This permanently deletes your local data AND your cloud backup. This cannot be undone.'
+              : 'This permanently deletes your locally stored health, mood, and briefing history on this device. This cannot be undone.',
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
           TextButton(
@@ -145,10 +160,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ],
       ),
     );
-    if (ok == true) {
-      await ref.read(wellnessControllerProvider.notifier).wipeLocalData();
-      ref.read(onboardingProvider.notifier).reset();
-      _toast('Local data wiped');
+    if (ok != true) return;
+
+    if (hasCloud) {
+      try {
+        await ref.read(syncServiceProvider).deleteAll();
+      } catch (_) {
+        // Cloud delete failed — continue with local wipe and notify.
+        _toast('Cloud data could not be deleted. Local data wiped.');
+      }
+    }
+
+    await ref.read(wellnessControllerProvider.notifier).wipeLocalData();
+    ref.read(onboardingProvider.notifier).reset();
+    _toast('All data wiped');
+  }
+
+  Future<void> _openUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      _toast('Could not open link');
     }
   }
 
@@ -189,24 +220,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               onTap: loggedIn ? _signOut : _signIn,
             ),
           ]),
-          _Section(title: 'Health Data', children: [
-            ListTile(
-              leading: const Icon(Icons.monitor_heart_outlined),
-              title: Text(healthConnected ? 'Health Connect' : 'Sample data'),
-              subtitle: Text(healthConnected
-                  ? 'Reading real device metrics'
-                  : 'Using simulated sample streams'),
-              trailing: state.isConnectingHealth
-                  ? const SizedBox(
-                      width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                  : TextButton(
-                      onPressed: () => ref
-                          .read(wellnessControllerProvider.notifier)
-                          .connectHealth(sampleFallback: !healthConnected),
-                      child: const Text('Refresh'),
-                    ),
-            ),
-          ]),
+          if (Platform.isAndroid)
+            _Section(title: 'Health Data', children: [
+              ListTile(
+                leading: const Icon(Icons.monitor_heart_outlined),
+                title: Text(healthConnected ? 'Health Connect' : 'Sample data'),
+                subtitle: Text(healthConnected
+                    ? 'Reading real device metrics'
+                    : 'Using simulated sample streams'),
+                trailing: state.isConnectingHealth
+                    ? const SizedBox(
+                        width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                    : TextButton(
+                        onPressed: () => ref
+                            .read(wellnessControllerProvider.notifier)
+                            .connectHealth(sampleFallback: !healthConnected),
+                        child: const Text('Refresh'),
+                      ),
+              ),
+            ])
+          else
+            _Section(title: 'Health Data', children: [
+              const ListTile(
+                leading: Icon(Icons.monitor_heart_outlined),
+                title: Text('Sample wellness data'),
+                subtitle: Text('Device health metrics require Android Health Connect'),
+              ),
+            ]),
           _Section(title: 'Cloud Backup', children: [
             ListTile(
               leading: const Icon(Icons.cloud_upload_outlined),
@@ -250,20 +290,36 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 MaterialPageRoute(builder: (_) => const MedicalDisclaimerScreen()),
               ),
             ),
-            const ListTile(
-              leading: Icon(Icons.description_outlined),
-              title: Text('Terms of Use'),
-              trailing: Icon(Icons.chevron_right),
+            ListTile(
+              leading: const Icon(Icons.policy_outlined),
+              title: const Text('Data Use Disclosure'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const DataDisclosureScreen()),
+              ),
             ),
-            const ListTile(
-              leading: Icon(Icons.privacy_tip_outlined),
-              title: Text('Privacy Policy'),
-              trailing: Icon(Icons.chevron_right),
+            ListTile(
+              leading: const Icon(Icons.description_outlined),
+              title: const Text('Terms of Use'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _openUrl(_kTermsUrl),
+            ),
+            ListTile(
+              leading: const Icon(Icons.privacy_tip_outlined),
+              title: const Text('Privacy Policy'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _openUrl(_kPrivacyPolicyUrl),
             ),
             ListTile(
               leading: const Icon(Icons.delete_outline, color: AppTheme.errorColor),
-              title: const Text('Wipe and Reset Local Data',
+              title: const Text('Wipe and Reset',
                   style: TextStyle(color: AppTheme.errorColor)),
+              subtitle: Text(
+                loggedIn && isPremium
+                    ? 'Permanently deletes local data and cloud backup'
+                    : 'Permanently deletes local data',
+                style: const TextStyle(color: AppTheme.errorColor),
+              ),
               onTap: _wipe,
             ),
           ]),
