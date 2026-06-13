@@ -1,4 +1,5 @@
 import 'dart:io' show Platform;
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -86,6 +87,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       await ref
           .read(wellnessControllerProvider.notifier)
           .updateProfile(nameC.text.trim(), emailC.text.trim());
+    }
+  }
+
+  Future<void> _testFirebaseConnection() async {
+    _toast('Testing Firebase connection…');
+    try {
+      final userAsync = ref.read(currentUserProvider);
+      final uid = userAsync.maybeWhen(data: (u) => u?.uid, orElse: () => null);
+      final docRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid ?? '_connectivity_probe');
+      await docRef.get().timeout(const Duration(seconds: 8));
+      _toast('Firebase connected — Firestore is reachable ✓');
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') {
+        _toast('Firebase reachable — sign in to access your data');
+      } else {
+        _toast('Firebase error: ${e.code}');
+      }
+    } catch (e) {
+      _toast('Connection failed: $e');
     }
   }
 
@@ -248,6 +270,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ]),
           _Section(title: 'Cloud Backup', children: [
+            ListTile(
+              leading: const Icon(Icons.wifi_tethering),
+              title: const Text('Test Firebase connection'),
+              subtitle: const Text('Check Firestore reachability'),
+              onTap: _testFirebaseConnection,
+            ),
             ListTile(
               leading: const Icon(Icons.cloud_upload_outlined),
               title: const Text('Back up now'),
