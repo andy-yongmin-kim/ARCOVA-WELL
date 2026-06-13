@@ -89,6 +89,32 @@ class SyncService {
         SetOptions(merge: true));
   }
 
+  // ---- Delete --------------------------------------------------------------
+
+  /// Deletes all cloud wellness data for the current user (health, mood,
+  /// briefings, and the user profile document).
+  Future<void> deleteAll() async {
+    final userDoc = _userDoc;
+    if (userDoc == null) throw Exception('Sign-in required');
+
+    final batch = _firestore.batch();
+
+    final health = await userDoc.collection('healthData').get();
+    for (final doc in health.docs) {
+      batch.delete(doc.reference);
+    }
+    final moods = await userDoc.collection('moodCheckIns').get();
+    for (final doc in moods.docs) {
+      batch.delete(doc.reference);
+    }
+    final briefings = await userDoc.collection('briefings').get();
+    for (final doc in briefings.docs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
+    await userDoc.delete();
+  }
+
   // ---- Download ------------------------------------------------------------
 
   /// Pulls all cloud wellness data into local Hive. Returns documents restored.

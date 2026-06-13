@@ -24,9 +24,7 @@ class DefaultFirebaseOptions {
         return android;
       case TargetPlatform.iOS:
         return ios;
-      case TargetPlatform.macOS:
-        return macos;
-      case TargetPlatform.windows:
+case TargetPlatform.windows:
         return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
@@ -59,22 +57,14 @@ class DefaultFirebaseOptions {
   );
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyCDO-g7U9ySemUR2eoBCOYRtMZXVVyjiNI',
-    appId: '1:953421428964:ios:d439f177c4cd6376c4d4f1',
+    appId: '1:953421428964:ios:3bae343eaff6a38cc4d4f1',
     messagingSenderId: '953421428964',
     projectId: 'arcova-65203',
     storageBucket: 'arcova-65203.firebasestorage.app',
-    iosBundleId: 'com.oneplace.onePlace',
-  );
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyCDO-g7U9ySemUR2eoBCOYRtMZXVVyjiNI',
-    appId: '1:953421428964:ios:d439f177c4cd6376c4d4f1',
-    messagingSenderId: '953421428964',
-    projectId: 'arcova-65203',
-    storageBucket: 'arcova-65203.firebasestorage.app',
-    iosBundleId: 'com.oneplace.onePlace',
+    iosBundleId: 'com.arcova.well',
   );
 
-  static const FirebaseOptions windows = FirebaseOptions(
+static const FirebaseOptions windows = FirebaseOptions(
     apiKey: 'AIzaSyDvweYlbNGsop87SuNgBSv4UgFG8I1hDfU',
     appId: '1:953421428964:web:ba834a05f43d8ab6c4d4f1',
     messagingSenderId: '953421428964',

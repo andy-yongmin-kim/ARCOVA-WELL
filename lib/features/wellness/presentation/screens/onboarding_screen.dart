@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'health_permission_screen.dart';
@@ -9,14 +10,19 @@ class _Page {
   const _Page(this.icon, this.title, this.body);
 }
 
-const _pages = <_Page>[
-  _Page(Icons.insights_outlined, 'Understand your health patterns',
-      'Arcova aggregates your sleep, steps, heart rate, and mood into a clear daily picture.'),
-  _Page(Icons.bolt_outlined, 'Turn insight into action',
-      'Each morning you get a personalized briefing with a few practical, achievable actions.'),
-  _Page(Icons.health_and_safety_outlined, 'Wellness, not diagnosis',
-      'Arcova supports healthy habits. It is not a medical device and does not diagnose conditions.'),
-];
+List<_Page> _buildPages() {
+  final firstPageBody = Platform.isAndroid
+      ? 'Arcova aggregates your sleep, steps, heart rate, and mood into a clear daily picture.'
+      : 'Arcova tracks your mood and generates personalized daily insights powered by AI.';
+
+  return [
+    _Page(Icons.insights_outlined, 'Understand your wellness patterns', firstPageBody),
+    _Page(Icons.bolt_outlined, 'Turn insight into action',
+        'Each morning you get a personalized briefing with a few practical, achievable actions.'),
+    _Page(Icons.health_and_safety_outlined, 'Wellness, not diagnosis',
+        'Arcova supports healthy habits. It is not a medical device and does not diagnose conditions.'),
+  ];
+}
 
 /// Three-page onboarding carousel.
 class OnboardingScreen extends StatefulWidget {
@@ -29,6 +35,13 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final _controller = PageController();
   int _index = 0;
+  late final List<_Page> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = _buildPages();
+  }
 
   @override
   void dispose() {
