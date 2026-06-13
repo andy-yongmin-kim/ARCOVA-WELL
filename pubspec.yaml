@@ -43,6 +43,13 @@ dependencies:
   health: ^13.0.0
   firebase_ai: ^2.3.0
 
+dependency_overrides:
+  # device_info_plus 12.x has a build error on current Xcode (isiOSAppOnVision
+  # called without forward declaration). health ^13.0.0 locks to ^12.1.0;
+  # override to 13.x which has the fix.
+  device_info_plus: ^13.0.0
+  device_info_plus_platform_interface: ^8.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
