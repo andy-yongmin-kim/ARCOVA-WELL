@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "953421428964",
+    "project_id": "arcova-65203",
+    "storage_bucket": "arcova-65203.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:953421428964:android:ad6f441e4269c239c4d4f1",
+        "android_client_info": {
+          "package_name": "com.arcova.well"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAkayWPhXa5MDKIeID2Usv0G_OXOMD263o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

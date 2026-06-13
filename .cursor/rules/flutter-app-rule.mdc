@@ -1,0 +1,12 @@
+---
+alwaysApply: false
+---
+# Flutter App Rules
+
+- Flutter로 Android 앱을 만들고 있다.
+- 50~70대를 위한 초간단 정보 저장 앱이다.
+- 공유(Intent)로 받은 텍스트/링크를 저장한다.
+- UX는 버튼 크고 단순해야 한다. (큰 버튼, 큰 글씨, 단순한 흐름)
+- Riverpod + Hive 구조를 따른다.
+
+
