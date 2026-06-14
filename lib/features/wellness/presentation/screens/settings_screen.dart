@@ -44,7 +44,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               .showSnackBar(SnackBar(content: Text(message)));
         }
       };
-      payment.initialize().then((_) => _initializedPayments = true);
+      payment.initialize().then((_) => _initializedPayments = true).catchError((e) {
+        debugPrint('PaymentService init error: $e');
+      });
     }
   }
 

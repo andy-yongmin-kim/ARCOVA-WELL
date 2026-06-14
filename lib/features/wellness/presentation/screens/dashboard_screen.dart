@@ -64,7 +64,7 @@ class DashboardScreen extends ConsumerWidget {
               physics: const NeverScrollableScrollPhysics(),
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
-              childAspectRatio: 1.25,
+              childAspectRatio: 0.9,
               children: [
                 HealthStatCard(
                   icon: Icons.bedtime_outlined,

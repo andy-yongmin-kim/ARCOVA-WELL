@@ -124,37 +124,40 @@ class PaymentService {
   
   /// 구매 상태 업데이트 처리
   void _handlePurchaseUpdates(List<PurchaseDetails> purchases) {
-    for (final purchase in purchases) {
-      debugPrint('📦 [PaymentService] 구매 상태: ${purchase.status}');
-      
-      switch (purchase.status) {
-        case PurchaseStatus.pending:
-          onStatusChanged?.call(PaymentStatus.loading, '결제 처리 중...');
-          break;
-          
-        case PurchaseStatus.purchased:
-        case PurchaseStatus.restored:
-          // 구매 완료 → 프리미엄 활성화
-          _savePremiumStatus(true);
-          onStatusChanged?.call(PaymentStatus.purchased, '프리미엄 기능이 활성화되었습니다!');
-          
-          // 구매 완료 처리 (중요!)
-          if (purchase.pendingCompletePurchase) {
-            _iap.completePurchase(purchase);
-          }
-          break;
-          
-        case PurchaseStatus.error:
-          onStatusChanged?.call(
-            PaymentStatus.error, 
-            purchase.error?.message ?? '결제 중 오류가 발생했습니다',
-          );
-          break;
-          
-        case PurchaseStatus.canceled:
-          onStatusChanged?.call(PaymentStatus.idle, null);
-          break;
+    try {
+      for (final purchase in purchases) {
+        debugPrint('📦 [PaymentService] 구매 상태: ${purchase.status}');
+
+        switch (purchase.status) {
+          case PurchaseStatus.pending:
+            onStatusChanged?.call(PaymentStatus.loading, '결제 처리 중...');
+            break;
+
+          case PurchaseStatus.purchased:
+          case PurchaseStatus.restored:
+            _savePremiumStatus(true);
+            onStatusChanged?.call(PaymentStatus.purchased, '프리미엄 기능이 활성화되었습니다!');
+            if (purchase.pendingCompletePurchase) {
+              _iap.completePurchase(purchase).catchError((e) {
+                debugPrint('❌ [PaymentService] completePurchase 에러: $e');
+              });
+            }
+            break;
+
+          case PurchaseStatus.error:
+            onStatusChanged?.call(
+              PaymentStatus.error,
+              purchase.error?.message ?? '결제 중 오류가 발생했습니다',
+            );
+            break;
+
+          case PurchaseStatus.canceled:
+            onStatusChanged?.call(PaymentStatus.idle, null);
+            break;
+        }
       }
+    } catch (e) {
+      debugPrint('❌ [PaymentService] 구매 업데이트 처리 에러: $e');
     }
   }
   
