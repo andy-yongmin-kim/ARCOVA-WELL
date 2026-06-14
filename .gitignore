@@ -44,6 +44,9 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Google OAuth secrets
+# Google OAuth secrets and Firebase credential backups
 **/client_secret_*.json
+docs/iOS/
+docs/Android/
+.opencode/
 
