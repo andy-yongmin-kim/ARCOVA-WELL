@@ -61,6 +61,8 @@ class WellnessRepository {
   /// Today's metrics + rolling 7-day averages (computed from the 7 days
   /// strictly before [date]). Falls back to a zeroed record / today's own
   /// value when there is no prior history, so comparisons stay neutral.
+  /// Body metrics (weight/BMI/body fat) are point-in-time values from the
+  /// most recent record that carries them.
   HealthSnapshot snapshotFor([String? date]) {
     final key = date ?? dateKey();
     final today = _healthBox.get(key) ?? DailyHealthData(date: key);
@@ -77,11 +79,24 @@ class WellnessRepository {
       return (total / window.length).round();
     }
 
+    // Surface the latest non-null body metric from today or any prior record.
+    final allRecords = [today, ...prior];
+    double? latestValue<T>(double? Function(DailyHealthData) sel) {
+      for (final r in allRecords) {
+        final v = sel(r);
+        if (v != null) return v;
+      }
+      return null;
+    }
+
     return HealthSnapshot(
       today: today,
       sleepSevenDayAverage: avg((d) => d.sleepDurationMinutes, today.sleepDurationMinutes),
       stepsSevenDayAverage: avg((d) => d.steps, today.steps),
       restingHrSevenDayAverage: avg((d) => d.restingHeartRate, today.restingHeartRate),
+      latestWeight: latestValue((d) => d.weight),
+      latestBmi: latestValue((d) => d.bodyMassIndex),
+      latestBodyFat: latestValue((d) => d.bodyFatPercentage),
     );
   }
 

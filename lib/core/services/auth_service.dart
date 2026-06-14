@@ -1,5 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -51,7 +51,7 @@ class AuthService {
 
       return userCredential.user;
     } catch (e) {
-      print('Google 로그인 에러: $e');
+      debugPrint('Google sign-in error: $e');
       rethrow;
     }
   }
@@ -80,7 +80,7 @@ final isLoggedInProvider = Provider<bool>((ref) {
   return userAsync.when(
     data: (user) => user != null,
     loading: () => false,
-    error: (_, __) => false,
+    error: (e, st) => false,
   );
 });
 

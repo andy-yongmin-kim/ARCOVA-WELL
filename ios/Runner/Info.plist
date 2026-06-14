@@ -47,6 +47,10 @@
 		<true/>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<key>NSHealthShareUsageDescription</key>
+		<string>Arcova reads sleep, steps, active minutes, resting heart rate, and optional body metrics from Apple Health to generate your personalized daily wellness briefing. Data is processed on-device and never shared without your consent.</string>
+		<key>NSHealthUpdateUsageDescription</key>
+		<string>Arcova does not write health data to Apple Health.</string>
 		<key>CFBundleURLTypes</key>
 		<array>
 			<dict>

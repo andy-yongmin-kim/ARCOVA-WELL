@@ -6,7 +6,6 @@ class DataDisclosureScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Data Use Disclosure')),
       body: ListView(
@@ -23,9 +22,10 @@ class DataDisclosureScreen extends StatelessWidget {
             icon: Icons.monitor_heart_outlined,
             title: 'Health Metrics',
             body:
-                'On Android, Arcova requests read-only access to sleep, steps, active minutes, and '
-                'resting heart rate via Health Connect. These values are stored locally and, if you '
-                'choose, backed up to your private Firestore document. Arcova never sells or shares '
+                'Arcova requests read-only access to sleep, steps, active minutes, resting heart rate, '
+                'and optional body metrics (weight, BMI, body fat) via Apple Health on iOS or '
+                'Health Connect on Android. These values are stored locally and, if you choose, '
+                'backed up to your private Firestore document. Arcova never sells or shares '
                 'your health data with third parties.',
           ),
           _Section(

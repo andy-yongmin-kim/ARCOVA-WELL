@@ -168,7 +168,10 @@ class SyncService {
         'steps': h.steps,
         'activeMinutes': h.activeMinutes,
         'restingHeartRate': h.restingHeartRate,
-        'updatedAt': Timestamp.fromDate(h.updatedAt ?? DateTime.now()),
+        'updatedAt': Timestamp.fromDate(h.updatedAt),
+        if (h.weight != null) 'weight': h.weight,
+        if (h.bodyMassIndex != null) 'bodyMassIndex': h.bodyMassIndex,
+        if (h.bodyFatPercentage != null) 'bodyFatPercentage': h.bodyFatPercentage,
       };
 
   DailyHealthData _mapToHealth(String date, Map<String, dynamic> m) => DailyHealthData(
@@ -178,6 +181,9 @@ class SyncService {
         activeMinutes: (m['activeMinutes'] ?? 0) as int,
         restingHeartRate: (m['restingHeartRate'] ?? 0) as int,
         updatedAt: (m['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+        weight: (m['weight'] as num?)?.toDouble(),
+        bodyMassIndex: (m['bodyMassIndex'] as num?)?.toDouble(),
+        bodyFatPercentage: (m['bodyFatPercentage'] as num?)?.toDouble(),
       );
 
   Map<String, dynamic> _moodToMap(MoodCheckIn m) => {
@@ -185,7 +191,7 @@ class SyncService {
         'energyScore': m.energyScore,
         'stressScore': m.stressScore,
         'note': m.note,
-        'createdAt': Timestamp.fromDate(m.createdAt ?? DateTime.now()),
+        'createdAt': Timestamp.fromDate(m.createdAt),
       };
 
   MoodCheckIn _mapToMood(String date, Map<String, dynamic> m) => MoodCheckIn(
@@ -202,7 +208,7 @@ class SyncService {
         'insights': b.insights,
         'recommendations': b.recommendations,
         'source': b.source,
-        'createdAt': Timestamp.fromDate(b.createdAt ?? DateTime.now()),
+        'createdAt': Timestamp.fromDate(b.createdAt),
       };
 
   DailyBriefing _mapToBriefing(String date, Map<String, dynamic> m) => DailyBriefing(

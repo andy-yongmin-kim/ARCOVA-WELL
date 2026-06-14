@@ -36,15 +36,18 @@ void main() {
     await tempDir.delete(recursive: true);
   });
 
-  testWidgets('Dashboard builds its first frame from the provider graph', (tester) async {
-    // Seed today's metrics so the snapshot + formatters are exercised.
-    await repo.saveHealthData(DailyHealthData(
-      date: WellnessRepository.dateKey(),
-      sleepDurationMinutes: 378,
-      steps: 4321,
-      activeMinutes: 28,
-      restingHeartRate: 71,
-    ));
+  testWidgets('Dashboard builds its first frame from the provider graph',
+      timeout: const Timeout(Duration(seconds: 30)), (tester) async {
+    // Hive file writes are real async I/O — use runAsync to escape fake-async.
+    await tester.runAsync(() async {
+      await repo.saveHealthData(DailyHealthData(
+        date: WellnessRepository.dateKey(),
+        sleepDurationMinutes: 378,
+        steps: 4321,
+        activeMinutes: 28,
+        restingHeartRate: 71,
+      ));
+    });
 
     await tester.pumpWidget(
       ProviderScope(
@@ -52,14 +55,20 @@ void main() {
         child: const MaterialApp(home: DashboardScreen()),
       ),
     );
-    await tester.pumpAndSettle();
+    // Two bounded pumps drive the first render and any Material animations.
+    // Avoid pumpAndSettle — LinearProgressIndicator creates an indefinite animation.
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
 
-    // Stat grid labels + CTAs rendered = controller built, snapshot computed,
-    // GridView-in-ListView laid out without assertions.
+    // Core metric labels rendered = controller built, snapshot computed,
+    // metrics-first layout renders without overflow or assertions.
     expect(find.text('Sleep'), findsOneWidget);
     expect(find.text('Steps'), findsOneWidget);
-    expect(find.text('View Daily Briefing'), findsOneWidget);
     // Seeded value formatted via Fmt.duration.
     expect(find.text('6h 18m'), findsOneWidget);
+    // Briefing CTA no longer lives on Home — it is in the Briefing tab.
+    expect(find.text('View Daily Briefing'), findsNothing);
+    // Weekly summary is accessible via inline link, not a bottom CTA.
+    expect(find.text('Weekly summary →'), findsOneWidget);
   });
 }

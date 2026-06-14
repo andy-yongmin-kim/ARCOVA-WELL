@@ -25,6 +25,16 @@ class DailyHealthData extends HiveObject {
   @HiveField(5)
   DateTime updatedAt;
 
+  // Optional body metrics — null when the platform or user hasn't provided them.
+  @HiveField(6)
+  double? weight; // kilograms
+
+  @HiveField(7)
+  double? bodyMassIndex;
+
+  @HiveField(8)
+  double? bodyFatPercentage; // 0–100
+
   DailyHealthData({
     required this.date,
     this.sleepDurationMinutes = 0,
@@ -32,6 +42,9 @@ class DailyHealthData extends HiveObject {
     this.activeMinutes = 0,
     this.restingHeartRate = 0,
     DateTime? updatedAt,
+    this.weight,
+    this.bodyMassIndex,
+    this.bodyFatPercentage,
   }) : updatedAt = updatedAt ?? DateTime.now();
 }
 
@@ -43,10 +56,21 @@ class HealthSnapshot {
   final int stepsSevenDayAverage;
   final int restingHrSevenDayAverage;
 
+  // Latest available body metrics (point-in-time, not averaged).
+  final double? latestWeight;
+  final double? latestBmi;
+  final double? latestBodyFat;
+
   const HealthSnapshot({
     required this.today,
     required this.sleepSevenDayAverage,
     required this.stepsSevenDayAverage,
     required this.restingHrSevenDayAverage,
+    this.latestWeight,
+    this.latestBmi,
+    this.latestBodyFat,
   });
+
+  bool get hasBodyMetrics =>
+      latestWeight != null || latestBmi != null || latestBodyFat != null;
 }

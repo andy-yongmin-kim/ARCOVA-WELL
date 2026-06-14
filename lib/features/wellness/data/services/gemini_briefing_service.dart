@@ -20,7 +20,8 @@ class GeminiBriefingService {
       model: _model,
       systemInstruction: Content.text(
         'You are a supportive wellness coach. You are NOT a doctor and must not '
-        'diagnose or give medical advice. Base everything on the provided trends. '
+        'diagnose or give medical advice. Use only the provided data. '
+        'Handle missing metrics briefly and without speculation. '
         'Keep insights factual and recommendations small, practical, and achievable.',
       ),
       generationConfig: GenerationConfig(
@@ -28,10 +29,10 @@ class GeminiBriefingService {
         responseSchema: Schema.object(
           properties: {
             'summary': Schema.string(
-                description: 'One or two encouraging sentences summarizing the day.'),
+                description: 'Exactly one encouraging sentence summarizing the day.'),
             'insights': Schema.array(
               items: Schema.string(),
-              description: '3-5 short factual observations about the trends.',
+              description: 'Exactly 3 short factual observations about the trends.',
             ),
             'recommendations': Schema.array(
               items: Schema.string(),
@@ -44,22 +45,63 @@ class GeminiBriefingService {
     );
   }
 
-  Future<DailyBriefing> generate(HealthSnapshot s, MoodCheckIn? mood) async {
+  /// Builds a structured JSON payload string from the snapshot and mood.
+  String _buildPayload(HealthSnapshot s, MoodCheckIn? mood) {
     final t = s.today;
-    final moodLine = mood == null
-        ? 'No mood check-in today.'
-        : 'Mood ${mood.moodScore}/10, energy ${mood.energyScore}/10, '
-            'stress ${mood.stressScore}/10. Note: "${mood.note}".';
+    final data = <String, dynamic>{
+      'today': {
+        'sleep_minutes': t.sleepDurationMinutes,
+        'steps': t.steps,
+        'active_minutes': t.activeMinutes,
+        'resting_heart_rate_bpm': t.restingHeartRate,
+      },
+      'seven_day_averages': {
+        'sleep_minutes': s.sleepSevenDayAverage,
+        'steps': s.stepsSevenDayAverage,
+        'resting_heart_rate_bpm': s.restingHrSevenDayAverage,
+      },
+      'mood': mood == null
+          ? null
+          : {
+              'mood_score': mood.moodScore,
+              'energy_score': mood.energyScore,
+              'stress_score': mood.stressScore,
+              'note': mood.note,
+            },
+      'missing_data': {
+        'sleep': t.sleepDurationMinutes == 0,
+        'steps': t.steps == 0,
+        'active_minutes': t.activeMinutes == 0,
+        'heart_rate': t.restingHeartRate == 0,
+        'mood': mood == null,
+      },
+    };
+
+    // Include optional body metrics only when available.
+    final body = <String, dynamic>{};
+    if (s.latestWeight != null) body['weight_kg'] = s.latestWeight;
+    if (s.latestBmi != null) body['bmi'] = s.latestBmi;
+    if (s.latestBodyFat != null) body['body_fat_percent'] = s.latestBodyFat;
+    if (body.isNotEmpty) data['body_metrics'] = body;
+
+    return jsonEncode(data);
+  }
+
+  Future<DailyBriefing> generate(HealthSnapshot s, MoodCheckIn? mood) async {
+    final payload = _buildPayload(s, mood);
 
     final prompt = '''
-Today's wellness data (compare each metric to its 7-day average):
-- Sleep: ${fmtMinutes(t.sleepDurationMinutes)} (avg ${fmtMinutes(s.sleepSevenDayAverage)})
-- Steps: ${t.steps} (avg ${s.stepsSevenDayAverage})
-- Active minutes: ${t.activeMinutes}
-- Resting heart rate: ${t.restingHeartRate} bpm (avg ${s.restingHrSevenDayAverage} bpm)
-- $moodLine
+Wellness data payload (JSON):
+$payload
 
-Return a JSON briefing with "summary", "insights", and exactly 3 "recommendations".
+Formatted for readability:
+- Sleep: ${fmtMinutes(s.today.sleepDurationMinutes)} (7-day avg ${fmtMinutes(s.sleepSevenDayAverage)})
+- Steps: ${s.today.steps} (avg ${s.stepsSevenDayAverage})
+- Active minutes: ${s.today.activeMinutes}
+- Resting HR: ${s.today.restingHeartRate} bpm (avg ${s.restingHrSevenDayAverage} bpm)
+${mood == null ? '- Mood: not logged today' : '- Mood ${mood.moodScore}/10, energy ${mood.energyScore}/10, stress ${mood.stressScore}/10'}
+
+Return a briefing with exactly 1 summary sentence, exactly 3 insights, and exactly 3 recommendations.
 ''';
 
     final response = await _build().generateContent([Content.text(prompt)]);
@@ -69,14 +111,19 @@ Return a JSON briefing with "summary", "insights", and exactly 3 "recommendation
     }
 
     final json = jsonDecode(text) as Map<String, dynamic>;
-    final insights = List<String>.from(json['insights'] ?? const []);
-    final recommendations = List<String>.from(json['recommendations'] ?? const []);
-    if (insights.isEmpty || recommendations.isEmpty) {
+    final rawInsights = List<String>.from(json['insights'] ?? const []);
+    final rawRecs = List<String>.from(json['recommendations'] ?? const []);
+
+    if (rawInsights.isEmpty || rawRecs.isEmpty) {
       throw StateError('Incomplete Gemini briefing');
     }
 
+    // Truncate to exactly 3 if the model returned more (avoids throw for minor overcount).
+    final insights = rawInsights.take(3).toList();
+    final recommendations = rawRecs.take(3).toList();
+
     return DailyBriefing(
-      date: t.date,
+      date: s.today.date,
       summary: (json['summary'] ?? '').toString(),
       insights: insights,
       recommendations: recommendations,

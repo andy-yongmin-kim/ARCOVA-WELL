@@ -12,6 +12,7 @@ import '../data/models/daily_briefing.dart';
 import '../data/repositories/wellness_repository.dart';
 import '../data/services/health_data_source.dart';
 import '../data/services/health_connect_data_source.dart';
+import '../data/services/apple_health_data_source.dart';
 import '../data/services/briefing_service.dart';
 import '../data/services/gemini_briefing_service.dart';
 
@@ -23,12 +24,12 @@ final wellnessRepositoryProvider = Provider<WellnessRepository>((ref) {
   throw UnimplementedError('wellnessRepositoryProvider must be overridden');
 });
 
-/// Source of health metrics: real Health Connect on Android (which itself
-/// falls back to sample data when permission is denied), sample everywhere else.
+/// Source of health metrics: real device data on Android (Health Connect) and
+/// iOS (HealthKit); both fall back to sample data when permission is denied or
+/// the health store is empty. Sample data everywhere else.
 final healthDataSourceProvider = Provider<HealthDataSource>((ref) {
-  if (!kIsWeb && Platform.isAndroid) {
-    return HealthConnectDataSource();
-  }
+  if (!kIsWeb && Platform.isAndroid) return HealthConnectDataSource();
+  if (!kIsWeb && Platform.isIOS) return AppleHealthDataSource();
   return SampleHealthDataSource();
 });
 

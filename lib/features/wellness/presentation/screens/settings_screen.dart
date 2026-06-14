@@ -46,6 +46,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       };
       payment.initialize().then((_) => _initializedPayments = true).catchError((e) {
         debugPrint('PaymentService init error: $e');
+        return false;
       });
     }
   }

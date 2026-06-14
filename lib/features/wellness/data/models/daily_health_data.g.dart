@@ -23,13 +23,16 @@ class DailyHealthDataAdapter extends TypeAdapter<DailyHealthData> {
       activeMinutes: fields[3] as int,
       restingHeartRate: fields[4] as int,
       updatedAt: fields[5] as DateTime?,
+      weight: fields[6] as double?,
+      bodyMassIndex: fields[7] as double?,
+      bodyFatPercentage: fields[8] as double?,
     );
   }
 
   @override
   void write(BinaryWriter writer, DailyHealthData obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.date)
       ..writeByte(1)
@@ -41,7 +44,13 @@ class DailyHealthDataAdapter extends TypeAdapter<DailyHealthData> {
       ..writeByte(4)
       ..write(obj.restingHeartRate)
       ..writeByte(5)
-      ..write(obj.updatedAt);
+      ..write(obj.updatedAt)
+      ..writeByte(6)
+      ..write(obj.weight)
+      ..writeByte(7)
+      ..write(obj.bodyMassIndex)
+      ..writeByte(8)
+      ..write(obj.bodyFatPercentage);
   }
 
   @override

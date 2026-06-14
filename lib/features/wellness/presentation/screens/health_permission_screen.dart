@@ -18,7 +18,15 @@ const _androidDataTypes = <_DataType>[
   _DataType(Icons.favorite_outline, 'Resting Heart Rate', 'Autonomic & heart health'),
 ];
 
-/// Final onboarding step: connect Health Connect (Android) or explain mood+AI focus (iOS).
+const _iosDataTypes = <_DataType>[
+  _DataType(Icons.bedtime_outlined, 'Sleep', 'Duration from Apple Health'),
+  _DataType(Icons.directions_walk_outlined, 'Steps', 'Daily step count'),
+  _DataType(Icons.local_fire_department_outlined, 'Active Minutes', 'Exercise time'),
+  _DataType(Icons.favorite_outline, 'Resting Heart Rate', 'Resting BPM'),
+  _DataType(Icons.monitor_weight_outlined, 'Weight & Body Metrics', 'Optional — when available in Apple Health'),
+];
+
+/// Final onboarding step: connect Apple Health (iOS) or Health Connect (Android).
 class HealthPermissionScreen extends ConsumerStatefulWidget {
   const HealthPermissionScreen({super.key});
 
@@ -58,7 +66,7 @@ class _HealthPermissionScreenState extends ConsumerState<HealthPermissionScreen>
               Text('Connect your health data', style: theme.textTheme.headlineMedium),
               const SizedBox(height: 8),
               Text(
-                'Arcova reads the following to build your daily insights. Your data stays on your device unless you enable cloud backup.',
+                'Arcova reads the following from Health Connect to build your daily insights. Your data stays on your device unless you enable cloud backup.',
                 style: theme.textTheme.bodyMedium?.copyWith(color: AppTheme.textSecondary),
               ),
               const SizedBox(height: 20),
@@ -68,29 +76,7 @@ class _HealthPermissionScreenState extends ConsumerState<HealthPermissionScreen>
                   separatorBuilder: (context, index) => const SizedBox(height: 12),
                   itemBuilder: (context, i) {
                     final d = _androidDataTypes[i];
-                    return Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: theme.cardColor,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: AppTheme.cardShadow,
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(d.icon, color: AppTheme.primaryColor),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(d.title, style: theme.textTheme.titleMedium),
-                                Text(d.subtitle, style: theme.textTheme.bodySmall),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
+                    return _DataTypeRow(d: d);
                   },
                 ),
               ),
@@ -130,59 +116,78 @@ class _HealthPermissionScreenState extends ConsumerState<HealthPermissionScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('You\'re all set', style: theme.textTheme.headlineMedium),
+              Text('Connect Apple Health', style: theme.textTheme.headlineMedium),
               const SizedBox(height: 8),
               Text(
-                'Arcova will track your daily mood check-ins and generate personalized AI briefings. '
-                'Device health metrics (sleep, steps, heart rate) are available on Android via Health Connect.',
+                'Arcova reads the following from Apple Health to build your daily insights. Your data stays on your device unless you enable cloud backup.',
                 style: theme.textTheme.bodyMedium?.copyWith(color: AppTheme.textSecondary),
               ),
-              const SizedBox(height: 24),
-              for (final item in const [
-                (Icons.mood, 'Daily Mood Check-In', 'Log how you feel each day'),
-                (Icons.article_outlined, 'AI Daily Briefing', 'Personalized insight every morning'),
-                (Icons.cloud_outlined, 'Cloud Backup', 'Optional — sign in + premium required'),
-              ])
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: theme.cardColor,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: AppTheme.cardShadow,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(item.$1, color: AppTheme.primaryColor),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(item.$2, style: theme.textTheme.titleMedium),
-                              Text(item.$3, style: theme.textTheme.bodySmall),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: _iosDataTypes.length,
+                  separatorBuilder: (context, index) => const SizedBox(height: 12),
+                  itemBuilder: (context, i) {
+                    final d = _iosDataTypes[i];
+                    return _DataTypeRow(d: d);
+                  },
                 ),
-              const Spacer(),
+              ),
               if (_busy)
-                const Center(child: CircularProgressIndicator())
-              else
+                const Center(child: Padding(
+                  padding: EdgeInsets.all(8),
+                  child: CircularProgressIndicator(),
+                ))
+              else ...[
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () => _proceed(useSample: true),
-                    child: const Text('Get Started'),
+                    onPressed: () => _proceed(useSample: false),
+                    child: const Text('Connect Apple Health'),
                   ),
                 ),
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: () => _proceed(useSample: true),
+                  child: const Text('Use Sample Data'),
+                ),
+              ],
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _DataTypeRow extends StatelessWidget {
+  final _DataType d;
+  const _DataTypeRow({required this.d});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: AppTheme.cardShadow,
+      ),
+      child: Row(
+        children: [
+          Icon(d.icon, color: AppTheme.primaryColor),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(d.title, style: theme.textTheme.titleMedium),
+                Text(d.subtitle, style: theme.textTheme.bodySmall),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
